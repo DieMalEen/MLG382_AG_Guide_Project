@@ -11,8 +11,8 @@ import pickle
 # -------------------------------------------------------------------------------------------
 
 # Step 1: Load Train and Test CSVs
-train_data = pd.read_csv("data/train_data.csv", delimiter=",")
-test_data = pd.read_csv("data/test_data.csv", delimiter=",")
+train_data = pd.read_csv("../data/train_data.csv", delimiter=",")
+test_data = pd.read_csv("../data/test_data.csv", delimiter=",")
 
 # Step 2: Separate Features and Target
 X_train = train_data.drop(columns=["GPA", "GradeClass", "StudentID"])
