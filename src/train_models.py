@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import StandardScaler
 import pickle
 
@@ -21,7 +22,7 @@ X_test = test_data.drop(columns=["GPA" ,"GradeClass", "StudentID"])
 y_test = test_data["GradeClass"]
 
 # Step 3: Feature Scaling
-scaler = StandardScaler()
+scaler = RobustScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.fit_transform(X_test)
 
@@ -30,7 +31,7 @@ model = LogisticRegression(solver='lbfgs', warm_start=True)
 
 accuracies = []
 
-# Iterate through 10 iterations before displaying accuracy on graph
+# Iterate through 15 iterations displaying accuracy on graph
 for i in range(1, 16):
     model.max_iter = i
     model.fit(X_train_scaled, y_train)
@@ -69,7 +70,7 @@ with open("artifacts/regression_model.pkl", "wb") as f:
 with open('artifacts/regression_scaler.pkl', 'wb') as f:
     pickle.dump(scaler, f)
 
-# Step 8: Save Predictions
+# Step 8: Save Test Predictions
 grade_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'F'}
 
 comparison_df = test_data[["StudentID", "GradeClass"]].copy()
