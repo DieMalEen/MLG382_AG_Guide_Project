@@ -3,10 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-
+import seaborn as sns
 # Grade Map
 grade_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'F'}
 
@@ -33,9 +33,12 @@ def prepare_data(train, test):
 # Logistic Regression needs to be scaled and ouliers need to be treated
 def run_logistic_regression(x_train, y_train, x_test, y_test):
     # RobustScaler to take into account outliers
-    scaler = RobustScaler()
+    scaler = StandardScaler()
     x_train_scaled = scaler.fit_transform(x_train)
     x_test_scaled = scaler.fit_transform(x_test)
+
+    print("test")
+    print(x_train_scaled)
 
     # Train Logistic Regression model through 100 iterations
     model = LogisticRegression(max_iter=100, solver='lbfgs', warm_start=True)
@@ -150,6 +153,7 @@ def main():
 
     y_pred_xgb = run_xgboost(x_train, y_train, x_test, y_test)
     save_predictions(test_data, y_pred_xgb, "xgboost")
+
 
 if __name__ == "__main__":
     main()
