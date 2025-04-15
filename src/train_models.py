@@ -68,7 +68,7 @@ def run_logistic_regression(x_train, y_train, x_test, y_test):
 
 def logistic_regression_graph(x_train, y_train, x_test, y_test):
     # RobustScaler to take into account outliers
-    scaler = RobustScaler()
+    scaler = StandardScaler()
     x_train_scaled = scaler.fit_transform(x_train)
     x_test_scaled = scaler.fit_transform(x_test)
 
@@ -99,7 +99,7 @@ def logistic_regression_graph(x_train, y_train, x_test, y_test):
 
 # Random Forest does not need to be scaled or outlier treated
 def run_random_forest(x_train, y_train, x_test, y_test):
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model = RandomForestClassifier(n_estimators=100, random_state=50)
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
     print("\nRandom Forest Accuracy:", round(accuracy_score(y_test, y_pred), 4))
@@ -112,7 +112,7 @@ def run_random_forest(x_train, y_train, x_test, y_test):
 
 # XGBoost does not need to be scaled or outlier treated
 def run_xgboost(x_train, y_train, x_test, y_test):
-    model = XGBClassifier(use_label_encoder=False, eval_metric='mlogloss', random_state=42)
+    model = XGBClassifier(n_estimator=100, use_label_encoder=False, eval_metric='mlogloss', random_state=50)
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
     print("\nXGBoost Accuracy:", round(accuracy_score(y_test, y_pred), 4))
