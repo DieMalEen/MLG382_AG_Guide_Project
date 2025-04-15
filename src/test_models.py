@@ -1,46 +1,54 @@
 import pickle
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
-# Load the trained model and scaler (pre-fitted scaler)
-with open("artifacts/regression_model.pkl", "rb") as f:
-    model = pickle.load(f)
+# Example input string from user
+student_input = "1136,15,0,3,1,10.531898851795788,12,0,2,1,0,0,0,2.122638529628868,3.0"
 
-# Load the pre-fitted scaler
-with open("artifacts/regression_scaler.pkl", "rb") as f:
-    scaler = pickle.load(f)
+def load_model_and_scaler(model_type):
+    model_path = f"artifacts/{model_type}_model.pkl"
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+    
+    scaler = None
+    if model_type == "regression":
+        with open("artifacts/regression_scaler.pkl", "rb") as f:
+            scaler = pickle.load(f)
 
-def regression_predict_grade(input_string):
-    # Define the column names as per your data
+    return model, scaler
+
+def preprocess_input(input_string, model_type):
+    # Define the feature columns (excluding StudentID, GPA, and GradeClass)
     columns = ["Age", "Gender", "Ethnicity", "ParentalEducation", "StudyTimeWeekly", "Absences", 
                "Tutoring", "ParentalSupport", "Extracurricular", "Sports", "Music", "Volunteering"]
-
-    # Split the input string by commas
-    input_values = input_string.split(',')
     
-    # Remove the StudentID and the GPA and GradeClass (assuming StudentID is first and GPA, GradeClass are last)
-    input_values = input_values[1:-2]
+    # Split and slice the input (remove ID, GPA, GradeClass)
+    values = input_string.split(',')[1:-2]
+    input_data = {columns[i]: float(values[i]) for i in range(len(columns))}
+    
+    df = pd.DataFrame([input_data])
 
-    # Convert the input values into a dictionary with proper column names
-    input_data = {columns[i]: float(input_values[i]) for i in range(len(input_values))}
+    # Scale only for regression and xgboost (which was scaled during training)
+    if model_type == "regression" or model_type == "xgboost":
+        _, scaler = load_model_and_scaler("regression")
+        df_scaled = scaler.transform(df)
+        return df_scaled
+    return df  # Random Forest uses raw features
 
-    # Convert the input data to a DataFrame
-    input_df = pd.DataFrame([input_data])
+def predict_grade(input_string, model_type="regression"):
+    # Load model and scaler
+    model, _ = load_model_and_scaler(model_type)
 
-    # Scale the input data using the pre-fitted scaler
-    input_scaled = scaler.transform(input_df)
+    # Preprocess input
+    input_processed = preprocess_input(input_string, model_type)
 
-    # Make the prediction using the trained model
-    predicted_class = model.predict(input_scaled)[0]
+    # Predict
+    predicted_class = model.predict(input_processed)[0]
 
-    # Mapping numeric class back to the letter grade
+    # Map class to letter grade
     grade_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'F'}
+    return grade_map[predicted_class]
 
-    predicted_grade = grade_map[predicted_class]
-    return predicted_grade
-
-# Example input string from user (ensure it has the correct format)
-student_input = "1962,17,1,0,1,19.27635322376361,3,1,4,0,0,0,0,3.576909015459067,0.0"
-
-# Print the predicted grade
-print(f"Predicted grade: {regression_predict_grade(student_input)}")
+# Example usage
+print("Predicted grade with Logistic Regression:", predict_grade(student_input, "regression"))
+print("Predicted grade with Random Forest:", predict_grade(student_input, "random_forest"))
+print("Predicted grade with XGBoost:", predict_grade(student_input, "xgboost"))
