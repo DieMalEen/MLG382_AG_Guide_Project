@@ -22,7 +22,7 @@ def load_model_and_scaler(model_type):
 logreg_model, logreg_scaler = load_model_and_scaler("regression")
 rf_model, _ = load_model_and_scaler("random_forest")
 xgb_model, _ = load_model_and_scaler("xgboost")
-dl_model, dl_scaler = load_model_and_scaler("deep_learning")
+dl_model, _ = load_model_and_scaler("deep_learning")
 
 columns = ["Age", "Gender", "Ethnicity", "ParentalEducation", "StudyTimeWeekly", "Absences", 
            "Tutoring", "ParentalSupport", "Extracurricular", "Sports", "Music", "Volunteering"]
@@ -113,7 +113,7 @@ def update_prediction(n_clicks, model_type, *input_values):
     elif model_type == "xgboost":
         model, scaler = xgb_model, None
     else:
-        model, scaler = dl_model, dl_scaler
+        model, scaler = dl_model, logreg_scaler
 
     try:
         if model_type in ["regression", "deep_learning"] and scaler is not None:
