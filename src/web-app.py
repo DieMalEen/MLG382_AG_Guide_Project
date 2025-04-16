@@ -4,6 +4,7 @@ import pandas as pd
 import pickle
 import numpy as np
 
+
 app = dash.Dash(__name__, external_stylesheets=["https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"])
 server = app.server
 
@@ -14,7 +15,7 @@ def load_model_and_scaler(model_type):
         model = pickle.load(f)
 
     scaler = None
-    if model_type in ["regression", "deep_learning"]:
+    if model_type in ["regression"]:
         with open("../artifacts/regression_scaler.pkl", "rb") as f:
             scaler = pickle.load(f)
     return model, scaler

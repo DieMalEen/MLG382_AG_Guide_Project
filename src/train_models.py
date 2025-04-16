@@ -171,8 +171,7 @@ def evaluate_deep_learning_model(model, x_test, y_test):
 # Save the Deep Learning model
 def save_deep_learning_model(model):
     """Save the trained Deep Learning model as a .pkl file."""
-    with open('../artifacts/deep_learning_model.pkl', 'wb') as f:
-        pickle.dump(model, f)
+    model.save('../artifacts/deep_learning_model.pkl')
     print("Deep Learning model saved as 'artifacts/deep_learning_model.pkl'")
 
 
