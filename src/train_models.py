@@ -15,29 +15,23 @@ from tensorflow.keras.callbacks import EarlyStopping
 # Grade Map
 grade_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'F'}
 
-# Load the data from the Excel files
 def load_data():
     train = pd.read_csv("../data/train_data.csv", delimiter=",")
     test = pd.read_csv("../data/test_data.csv", delimiter=",")
     
     return train, test
 
-# Separate the features and targets
 def prepare_data(train, test):  
-    # Drop the StudentID, GPA, and GradeClass
     x_train = train.drop(columns=["StudentID", "GPA", "GradeClass"])
     y_train = train["GradeClass"] #Dependent variable for "training"
 
-    # Test values
     x_test = test.drop(columns=["StudentID", "GPA", "GradeClass"])
     y_test = test["GradeClass"] #Dependent variable for testing accuracy
 
     return x_train, y_train, x_test, y_test
 
 
-# Logistic Regression needs to be scaled and ouliers need to be treated
 def run_logistic_regression(x_train, y_train, x_test, y_test):
-    # RobustScaler to take into account outliers
     scaler = StandardScaler()
     x_train_scaled = scaler.fit_transform(x_train)
     x_test_scaled = scaler.fit_transform(x_test)
@@ -45,8 +39,8 @@ def run_logistic_regression(x_train, y_train, x_test, y_test):
     print("test")
     print(x_train_scaled)
 
-    # Train Logistic Regression model through 100 iterations
-    model = LogisticRegression(max_iter=100, solver='lbfgs', warm_start=True)
+    model = LogisticRegression(max_iter=100, solver='lbfgs', warm_start=True)     # Train model
+
 
     model.fit(x_train_scaled, y_train)
 
@@ -61,29 +55,25 @@ def run_logistic_regression(x_train, y_train, x_test, y_test):
     print("\nConfusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
 
-    # Save the model into a pkl file
-    with open("../artifacts/regression_model.pkl", "wb") as f:
+    with open("../artifacts/regression_model.pkl", "wb") as f:     # Save the model into a pkl file
         pickle.dump(model, f)
 
-    # Save the scale into a pkl file
     with open('../artifacts/regression_scaler.pkl', 'wb') as f:
         pickle.dump(scaler, f)
     
     return y_pred
 
 def logistic_regression_graph(x_train, y_train, x_test, y_test):
-    # RobustScaler to take into account outliers
+    
     scaler = StandardScaler()
     x_train_scaled = scaler.fit_transform(x_train)
     x_test_scaled = scaler.fit_transform(x_test)
 
-    # Train Logistic Regression model through 100 iterations
+    # Train model
     model = LogisticRegression(solver='lbfgs', warm_start=True)
 
-    # Create accuracies list
     accuracies = []
 
-    # Iterate through 15 iterations
     for i in range(1, 16):
         model.max_iter = i
         model.fit(x_train_scaled, y_train)
@@ -91,10 +81,8 @@ def logistic_regression_graph(x_train, y_train, x_test, y_test):
         y_pred = model.predict(x_test_scaled)
         accuracy = accuracy_score(y_test, y_pred)
 
-        # Save accuracy to list
         accuracies.append(accuracy)
 
-    # Plot the accuracies list to a graph to show increase in accuracy with more iterations
     plt.plot(range(1, 16), accuracies, marker='o', color='b')
     plt.title("Accuracy per Iteration")
     plt.xlabel("Iteration")
@@ -102,7 +90,6 @@ def logistic_regression_graph(x_train, y_train, x_test, y_test):
     plt.grid(True)
     plt.show()
 
-# Random Forest does not need to be scaled or outlier treated
 def run_random_forest(x_train, y_train, x_test, y_test):
     model = RandomForestClassifier(n_estimators=100, random_state=50)
     model.fit(x_train, y_train)
@@ -115,7 +102,6 @@ def run_random_forest(x_train, y_train, x_test, y_test):
         pickle.dump(model, f)
     return y_pred
 
-# XGBoost does not need to be scaled or outlier treated
 def run_xgboost(x_train, y_train, x_test, y_test):
     model = XGBClassifier(n_estimator=100, use_label_encoder=False, eval_metric='mlogloss', random_state=50)
     model.fit(x_train, y_train)
@@ -146,15 +132,11 @@ def build_deep_learning_model(input_shape):
         Dropout(0.3),
         Dense(32, activation='relu'),
         Dropout(0.3),
-        Dense(5, activation='softmax')  # 5 classes
+        Dense(5, activation='softmax')
     ])
 
-    # Compile the model
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    
-    # Print model summary
-    model.summary()
-    
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])    # Compile the model
+    model.summary()    
     return model
 
 def train_deep_learning_model(model, x_train, y_train):
@@ -177,7 +159,7 @@ def evaluate_deep_learning_model(model, x_test, y_test):
     y_pred_classes = np.argmax(y_pred, axis=1)
     y_test_classes = np.argmax(y_test, axis=1)
 
-    # Print evaluation metrics
+    # evaluation metrics
     print("\nDeep Learning Accuracy:", round(accuracy_score(y_test_classes, y_pred_classes), 4))
     print("\nClassification Report (Deep Learning):")
     print(classification_report(y_test_classes, y_pred_classes, target_names=list(grade_map.values())))
@@ -193,24 +175,19 @@ def save_deep_learning_model(model):
         pickle.dump(model, f)
     print("Deep Learning model saved as 'artifacts/deep_learning_model.pkl'")
 
-# Predict and save models test_data.csv predictions
-def save_predictions(test, y_pred, model_name):
+
+def save_predictions(test, y_pred, model_name): # Predict and save models test_data.csv predictions
     df = test[["StudentID", "GradeClass"]].copy()
     df[f"Predicted_{model_name}"] = y_pred
     df["ActualGrade"] = df["GradeClass"].astype(int).map(grade_map)
     df[f"PredictedGrade_{model_name}"] = pd.Series(y_pred).astype(int).map(grade_map)
     df["Match"] = df["ActualGrade"] == df[f"PredictedGrade_{model_name}"]
     
-    # Convert boolean values to 'True' and 'False' strings
-    df["Match"] = df["Match"].apply(lambda x: "True" if x else "False")
+    df["Match"] = df["Match"].apply(lambda x: "True" if x else "False")     # Convert boolean values to 'True' and 'False' strings
 
-    # Sort with 'False' rows first
     df = df.sort_values(by="Match").reset_index(drop=True)
-
-    # Save predictions to excel file
     df.to_csv(f"../artifacts/{model_name}_predictions.csv", index=False)
 
-# Main
 def main():
     train_data, test_data = load_data()
     x_train, y_train, x_test, y_test = prepare_data(train_data, test_data)
