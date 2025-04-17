@@ -3,25 +3,13 @@ from dash import html, dcc, Input, Output
 import pandas as pd
 import pickle
 import numpy as np
-from tensorflow.keras.models import load_model
-import h5py
+
 
 app = dash.Dash(__name__, external_stylesheets=["https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"])
 server = app.server
 
 # Load models and scaler
 def load_model_and_scaler(model_type):
-    if model_type == "deep_learning":
-        # Fix: force h5py to allow loading of pickled data
-        import numpy as np
-        np.load = lambda *a, **k: np.load(*a, allow_pickle=True, **k)
-
-        model = load_model("../artifacts/deep_learning_model.keras")
-        with open("../artifacts/regression_scaler.pkl", "rb") as f:
-            scaler = pickle.load(f)
-        return model, scaler
-
-    # Non-DL models use pickle
     model_path = f"../artifacts/{model_type}_model.pkl"
     with open(model_path, "rb") as f:
         model = pickle.load(f)
