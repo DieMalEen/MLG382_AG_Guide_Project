@@ -8,10 +8,13 @@ from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 import seaborn as sns
 import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.callbacks import EarlyStopping
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import LabelEncoder
+import torch.nn as nn
+
 # Grade Map
 grade_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'F'}
 
@@ -119,60 +122,83 @@ def preprocess_for_deep_learning(x_train, y_train, x_test, y_test):
     X_train_scaled = scaler.fit_transform(x_train)
     X_test_scaled = scaler.transform(x_test)
 
-    # One-hot encode the target (5 classes: A, B, C, D, F)
-    y_train_encoded = to_categorical(y_train, num_classes=5)
-    y_test_encoded = to_categorical(y_test, num_classes=5)
+    label_encoder = LabelEncoder()
+    y_train_encoded = label_encoder.fit_transform(y_train)
+    y_test_encoded = label_encoder.transform(y_test)
 
-    return X_train_scaled, X_test_scaled, y_train_encoded, y_test_encoded
+    X_train_tensor = torch.tensor(X_train_scaled, dtype=torch.float32)
+    y_train_tensor = torch.tensor(y_train_encoded, dtype=torch.long)
+    X_test_tensor = torch.tensor(X_test_scaled, dtype=torch.float32)
+    y_test_tensor = torch.tensor(y_test_encoded, dtype=torch.long)
 
-def build_deep_learning_model(input_shape):
-    """Build and compile the Deep Learning model."""
-    model = Sequential([
-        Dense(64, activation='relu', input_shape=(input_shape,)),
-        Dropout(0.3),
-        Dense(32, activation='relu'),
-        Dropout(0.3),
-        Dense(5, activation='softmax')
-    ])
+    train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
+    test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
 
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])    # Compile the model
-    model.summary()    
-    return model
+    return train_dataset, test_dataset, X_train_tensor.shape[1], scaler
 
-def train_deep_learning_model(model, x_train, y_train):
-    """Train the Deep Learning model with early stopping."""
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+class SimpleNN(nn.Module):
+    def __init__(self, input_size):
+        super(SimpleNN, self).__init__()
+        self.fc1 = nn.Linear(input_size, 64)
+        self.dropout1 = nn.Dropout(0.3)
+        self.fc2 = nn.Linear(64, 32)
+        self.dropout2 = nn.Dropout(0.3)
+        self.output = nn.Linear(32, 5)
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = self.dropout1(x)
+        x = torch.relu(self.fc2(x))
+        x = self.dropout2(x)
+        return self.softmax(self.output(x))
     
-    history = model.fit(
-        x_train, y_train,
-        validation_split=0.2,
-        epochs=100,
-        batch_size=32,
-        callbacks=[early_stopping],
-        verbose=1
-    )
-    return history
+def build_deep_learning_model(input_dim):
+    return SimpleNN(input_dim)
 
-def evaluate_deep_learning_model(model, x_test, y_test):
-    """Evaluate the Deep Learning model on the test set."""
-    y_pred = model.predict(x_test)
-    y_pred_classes = np.argmax(y_pred, axis=1)
-    y_test_classes = np.argmax(y_test, axis=1)
+def train_deep_learning_model(model, train_dataset, epochs=100, batch_size=32, learning_rate=0.001):
+    model.train()
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # evaluation metrics
-    print("\nDeep Learning Accuracy:", round(accuracy_score(y_test_classes, y_pred_classes), 4))
+    for epoch in range(epochs):
+        total_loss = 0
+        for inputs, labels in train_loader:
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        if epoch % 10 == 0:
+            print(f"Epoch {epoch}, Loss: {total_loss:.4f}")
+
+def evaluate_deep_learning_model(model, test_dataset):
+    model.eval()
+    test_loader = DataLoader(test_dataset, batch_size=32)
+    all_preds = []
+    all_labels = []
+    
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            outputs = model(inputs)
+            preds = torch.argmax(outputs, dim=1)
+            all_preds.extend(preds.numpy())
+            all_labels.extend(labels.numpy())
+
+    print("\nDeep Learning Accuracy:", round(accuracy_score(all_labels, all_preds), 4))
     print("\nClassification Report (Deep Learning):")
-    print(classification_report(y_test_classes, y_pred_classes, target_names=list(grade_map.values())))
+    print(classification_report(all_labels, all_preds, target_names=list(grade_map.values())))
     print("\nConfusion Matrix (Deep Learning):")
-    print(confusion_matrix(y_test_classes, y_pred_classes))
+    print(confusion_matrix(all_labels, all_preds))
 
-    return y_pred_classes
+    return all_preds
 
 # Save the Deep Learning model
 def save_deep_learning_model(model):
-    """Save the trained Deep Learning model as a .keras file."""
-    model.save("../artifacts/deep_learning_model.keras")
-    print("Deep Learning model saved as 'artifacts/deep_learning_model.keras'")
+    torch.save(model.state_dict(), "../artifacts/deep_learning_model.pth")
+    print("Deep Learning model saved as 'artifacts/deep_learning_model.pth'")
 
 
 def save_predictions(test, y_pred, model_name): # Predict and save models test_data.csv predictions
@@ -201,11 +227,11 @@ def main():
     save_predictions(test_data, y_pred_xgb, "xgboost")
 
     # Deep Learning workflow
-    x_train_dl, x_test_dl, y_train_dl, y_test_dl = preprocess_for_deep_learning(x_train, y_train, x_test, y_test)
-    dl_model = build_deep_learning_model(x_train_dl.shape[1])
-    train_deep_learning_model(dl_model, x_train_dl, y_train_dl)
-    y_pred_dl = evaluate_deep_learning_model(dl_model, x_test_dl, y_test_dl)
-    save_deep_learning_model(dl_model)
+    train_dataset, test_dataset, input_dim, _ = preprocess_for_deep_learning(x_train, y_train, x_test, y_test)
+    model = build_deep_learning_model(input_dim)
+    train_deep_learning_model(model, train_dataset)
+    y_pred_dl = evaluate_deep_learning_model(model, test_dataset)
+    save_deep_learning_model(model)
     save_predictions(test_data, y_pred_dl, "deep_learning")
     
 if __name__ == "__main__":
