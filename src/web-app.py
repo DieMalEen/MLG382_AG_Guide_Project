@@ -3,6 +3,7 @@ from dash import html, dcc, Input, Output
 import pandas as pd
 import pickle
 import numpy as np
+from tensorflow.keras.models import load_model as keras_load_model
 
 
 app = dash.Dash(__name__, external_stylesheets=["https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"])
@@ -10,15 +11,22 @@ server = app.server
 
 # Load models and scaler
 def load_model_and_scaler(model_type):
-    model_path = f"../artifacts/{model_type}_model.pkl"
-    with open(model_path, "rb") as f:
-        model = pickle.load(f)
-
-    scaler = None
-    if model_type in ["regression"]:
+    if model_type == "deep_learning":
+        model = keras_load_model("../artifacts/deep_learning_model.keras")
         with open("../artifacts/regression_scaler.pkl", "rb") as f:
             scaler = pickle.load(f)
-    return model, scaler
+        return model, scaler
+
+    else:
+        model_path = f"../artifacts/{model_type}_model.pkl"
+        with open(model_path, "rb") as f:
+            model = pickle.load(f)
+
+        scaler = None
+        if model_type == "regression":
+            with open("../artifacts/regression_scaler.pkl", "rb") as f:
+                scaler = pickle.load(f)
+        return model, scaler
 
 logreg_model, logreg_scaler = load_model_and_scaler("regression")
 rf_model, _ = load_model_and_scaler("random_forest")
