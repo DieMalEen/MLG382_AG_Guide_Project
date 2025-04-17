@@ -3,6 +3,7 @@ from dash import html, dcc, Input, Output
 import pandas as pd
 import pickle
 import numpy as np
+import os
 from tensorflow.keras.models import load_model
 
 
@@ -139,4 +140,5 @@ def update_prediction(n_clicks, model_type, *input_values):
         return f"Error making prediction: {str(e)}"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 8050))  # Fallback to 8050 locally
+    app.run_server(debug=False, host="0.0.0.0", port=port)
