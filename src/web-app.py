@@ -159,5 +159,5 @@ def predict(n_clicks, model_type, *input_values):
         return f"Error: {str(e)}"
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8050))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
