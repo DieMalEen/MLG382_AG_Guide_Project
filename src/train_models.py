@@ -145,6 +145,8 @@ class SimpleNN(nn.Module):
         self.dropout2 = nn.Dropout(0.3)
         self.output = nn.Linear(32, 5)
         self.softmax = nn.Softmax(dim=1)
+        self.relu = nn.ReLU()
+
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
