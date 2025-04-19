@@ -6,8 +6,6 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-import seaborn as sns
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -19,8 +17,8 @@ import torch.nn as nn
 grade_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'F'}
 
 def load_data():
-    train = pd.read_csv("../data/train_data.csv", delimiter=",")
-    test = pd.read_csv("../data/test_data.csv", delimiter=",")
+    train = pd.read_csv("data/train_data.csv", delimiter=",")
+    test = pd.read_csv("data/test_data.csv", delimiter=",")
     
     return train, test
 
@@ -58,10 +56,10 @@ def run_logistic_regression(x_train, y_train, x_test, y_test):
     print("\nConfusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
 
-    with open("../artifacts/regression_model.pkl", "wb") as f:     # Save the model into a pkl file
+    with open("artifacts/regression_model.pkl", "wb") as f:     # Save the model into a pkl file
         pickle.dump(model, f)
 
-    with open('../artifacts/regression_scaler.pkl', 'wb') as f:
+    with open('artifacts/regression_scaler.pkl', 'wb') as f:
         pickle.dump(scaler, f)
     
     return y_pred
@@ -101,7 +99,7 @@ def run_random_forest(x_train, y_train, x_test, y_test):
     print("\nClassification Report (Random Forest):")
     print(classification_report(y_test, y_pred, target_names=list(grade_map.values())))
 
-    with open("../artifacts/random_forest_model.pkl", "wb") as f:
+    with open("artifacts/random_forest_model.pkl", "wb") as f:
         pickle.dump(model, f)
     return y_pred
 
@@ -113,7 +111,7 @@ def run_xgboost(x_train, y_train, x_test, y_test):
     print("\nClassification Report (XGBoost):")
     print(classification_report(y_test, y_pred, target_names=list(grade_map.values())))
 
-    with open("../artifacts/xgboost_model.pkl", "wb") as f:
+    with open("artifacts/xgboost_model.pkl", "wb") as f:
         pickle.dump(model, f)
     return y_pred
 
@@ -199,7 +197,7 @@ def evaluate_deep_learning_model(model, test_dataset):
 
 # Save the Deep Learning model
 def save_deep_learning_model(model):
-    torch.save(model.state_dict(), "../artifacts/deep_learning_model.pth")
+    torch.save(model.state_dict(), "artifacts/deep_learning_model.pth")
     print("Deep Learning model saved as 'artifacts/deep_learning_model.pth'")
 
 
@@ -213,7 +211,7 @@ def save_predictions(test, y_pred, model_name): # Predict and save models test_d
     df["Match"] = df["Match"].apply(lambda x: "True" if x else "False")     # Convert boolean values to 'True' and 'False' strings
 
     df = df.sort_values(by="Match").reset_index(drop=True)
-    df.to_csv(f"../artifacts/{model_name}_predictions.csv", index=False)
+    df.to_csv(f"artifacts/{model_name}_predictions.csv", index=False)
 
 def main():
     train_data, test_data = load_data()

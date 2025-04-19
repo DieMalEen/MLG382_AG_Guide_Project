@@ -36,25 +36,25 @@ def load_all_models():
     models = {}
     
     # Logistic Regression
-    with open("../artifacts/regression_model.pkl", "rb") as f:
+    with open("artifacts/regression_model.pkl", "rb") as f:
         models["regression"] = {"model": pickle.load(f)}
-    with open("../artifacts/regression_scaler.pkl", "rb") as f:
+    with open("artifacts/regression_scaler.pkl", "rb") as f:
         models["regression"]["scaler"] = pickle.load(f)
 
     # Random Forest
-    with open("../artifacts/random_forest_model.pkl", "rb") as f:
+    with open("artifacts/random_forest_model.pkl", "rb") as f:
         models["random_forest"] = {"model": pickle.load(f)}
 
     # XGBoost
-    with open("../artifacts/xgboost_model.pkl", "rb") as f:
+    with open("artifacts/xgboost_model.pkl", "rb") as f:
         models["xgboost"] = {"model": pickle.load(f)}
 
     # Deep Learning
     dl_model = SimpleNN()
-    dl_model.load_state_dict(torch.load("../artifacts/deep_learning_model.pth", map_location=device))
+    dl_model.load_state_dict(torch.load("artifacts/deep_learning_model.pth", map_location=device))
     dl_model.to(device)
     dl_model.eval()
-    with open("../artifacts/regression_scaler.pkl", "rb") as f:
+    with open("artifacts/regression_scaler.pkl", "rb") as f:
         scaler = pickle.load(f)
     models["deep_learning"] = {"model": dl_model, "scaler": scaler}
 

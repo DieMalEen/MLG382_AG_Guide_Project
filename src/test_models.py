@@ -6,13 +6,13 @@ import numpy as np
 student_input = "1136,15,0,3,1,10.531898851795788,12,0,2,1,0,0,0,2.122638529628868,3.0"
 
 def load_model_and_scaler(model_type):
-    model_path = f"../artifacts/{model_type}_model.pkl"
+    model_path = f"artifacts/{model_type}_model.pkl"
     with open(model_path, "rb") as f:
         model = pickle.load(f)
     
     scaler = None
     if model_type in ["regression", "deep_learning"]:
-        with open("../artifacts/regression_scaler.pkl", "rb") as f:
+        with open("artifacts/regression_scaler.pkl", "rb") as f:
             scaler = pickle.load(f)
 
     return model, scaler
