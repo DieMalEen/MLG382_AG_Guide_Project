@@ -2,7 +2,6 @@ import dash
 from dash import html, dcc, Input, Output
 import pandas as pd
 import pickle
-import numpy as np
 import torch
 import torch.nn as nn
 import os
@@ -67,10 +66,10 @@ columns = ["Age", "Gender", "Ethnicity", "ParentalEducation", "StudyTimeWeekly",
 
 categorical_options = {
     "Gender": [{"label": "Male", "value": 0}, {"label": "Female", "value": 1}],
-    "Ethnicity": [{"label": "Group A", "value": 0}, {"label": "Group B", "value": 1}, {"label": "Group C", "value": 2}],
-    "ParentalEducation": [{"label": "High School", "value": 0}, {"label": "Diploma", "value": 1}, {"label": "Degree", "value": 2}],
+    "Ethnicity": [{"label": "Caucasian", "value": 0}, {"label": "African American", "value": 1}, {"label": "Asian", "value": 2}, {"label": "Other", "value": 3}],
+    "ParentalEducation": [{"label": "None", "value": 0}, {"label": "High School", "value": 1}, {"label": "Some College", "value": 2}, {"label": "Bachelor's", "value": 3}, {"label": "Higher Study", "value": 4}],
     "Tutoring": [{"label": "No", "value": 0}, {"label": "Yes", "value": 1}],
-    "ParentalSupport": [{"label": "No", "value": 0}, {"label": "Yes", "value": 1}],
+    "ParentalSupport": [{"label": "None", "value": 0}, {"label": "Low", "value": 1}, {"label": "Moderate", "value": 2}, {"label": "High", "value": 3}, {"label": "Very High", "value": 4}],
     "Extracurricular": [{"label": "No", "value": 0}, {"label": "Yes", "value": 1}],
     "Sports": [{"label": "No", "value": 0}, {"label": "Yes", "value": 1}],
     "Music": [{"label": "No", "value": 0}, {"label": "Yes", "value": 1}],
@@ -111,7 +110,9 @@ app.layout = html.Div(className="min-h-screen bg-gray-100 flex justify-center it
                     dcc.Input(
                         id=f'input-{col.lower()}',
                         type='number',
-                        value=0,
+                        value=15 if col == "Age" else 0,
+                        min=15 if col == "Age" else 0,
+                        max=18 if col == "Age" else (20 if col == "StudyTimeWeekly" else (30 if col == "Absences" else None)),
                         className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     )
                 ]) for col in columns
@@ -121,23 +122,40 @@ app.layout = html.Div(className="min-h-screen bg-gray-100 flex justify-center it
         html.Button('Predict Grade', id='predict-button', n_clicks=0, 
                     className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition duration-200"),
 
-        html.Div(id='prediction-output', className="mt-6 text-center text-xl font-medium text-blue-800")
+        html.Div(id='prediction-output', className="mt-6 text-center text-xl font-medium text-blue-800"),
+        html.Div(id='validation-error', className="mt-4 text-red-600 text-center font-medium")
     ])
 ])
+
 
 # Prediction callback
 @app.callback(
     Output('prediction-output', 'children'),
+    Output('validation-error', 'children'),
     Input('predict-button', 'n_clicks'),
     Input('model-selector', 'value'),
     *[Input(f'input-{col.lower()}', 'value') for col in columns]
 )
 def predict(n_clicks, model_type, *input_values):
     if n_clicks == 0:
-        return "Enter student details and click Predict Grade."
+        return "Enter student details and click Predict Grade.", ""
 
     try:
-        input_data = pd.DataFrame([dict(zip(columns, input_values))])
+        input_dict = dict(zip(columns, input_values))
+
+        # Validate input ranges
+        errors = []
+        if input_dict['Age'] is None or not (15 <= input_dict['Age'] <= 18):
+            errors.append("Age must be between 15 and 18.")
+        if input_dict['StudyTimeWeekly'] is None or not (0 <= input_dict['StudyTimeWeekly'] <= 20):
+            errors.append("Weekly study time must be between 0 and 20.")
+        if input_dict['Absences'] is None or not (0 <= input_dict['Absences'] <= 30):
+            errors.append("Absences must be between 0 and 30.")
+
+        if errors:
+            return "", " | ".join(errors)
+
+        input_data = pd.DataFrame([input_dict])
         model_info = models[model_type]
         model = model_info['model']
         scaler = model_info.get('scaler', None)
@@ -154,10 +172,10 @@ def predict(n_clicks, model_type, *input_values):
             predicted_class = model.predict(input_data)[0]
 
         grade_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'F'}
-        return f"Predicted Grade: {grade_map.get(predicted_class, 'Unknown')}"
+        return f"Predicted Grade: {grade_map.get(predicted_class, 'Unknown')}", ""
 
     except Exception as e:
-        return f"Error: {str(e)}"
+        return "", f"Error: {str(e)}"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
